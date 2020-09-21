@@ -1,5 +1,5 @@
-const PouchDB = require("pouchdb");
-PouchDB.plugin(require("pouchdb-find"));
+const PouchDB = orDefault(require("pouchdb"));
+PouchDB.plugin(orDefault(require("pouchdb-find")));
 
 const AUTHOR_KEY = "author";
 
@@ -148,3 +148,10 @@ class USHINBase {
 module.exports = {
   USHINBase,
 };
+
+// This is necessary to account for Webpack environments
+// Pouch exports ESM when possible, and Webpack doesn't normalize it back
+function orDefault(module) {
+  if (module.default) return module.default;
+  return module;
+}
