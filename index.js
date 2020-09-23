@@ -1,4 +1,5 @@
 const PouchDB = orDefault(require("pouchdb"));
+PouchDB.plugin(orDefault(require("pouchdb-adapter-leveldb")));
 PouchDB.plugin(orDefault(require("pouchdb-find")));
 
 const AUTHOR_KEY = "author";
