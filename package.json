@@ -27,6 +27,7 @@
   "dependencies": {
     "pouchdb": "^7.2.2",
     "pouchdb-adapter-leveldb": "^7.2.2",
+    "pouchdb-adapter-leveldb-browser": "^7.0.0-prerelease",
     "pouchdb-find": "^7.2.2"
   },
   "devDependencies": {
