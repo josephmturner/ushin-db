@@ -55,17 +55,16 @@ class USHINBase {
     revisionOf,
     focus,
     main,
-    createdAt = new Date(),
     points = {},
   }) {
     const { authorURL } = this;
     const finalPoints = {};
-    const createdAtTime = createdAt.getTime();
+    const createdAt = new Date().getTime();
 
     for (const shape in points) {
       const originalPoints = points[shape];
       const pointPromises = originalPoints.map((point) =>
-        this.addPoint({ createdAt: createdAtTime, ...point })
+        this.addPoint({ createdAt: createdAt, ...point })
       );
       const pointIDs = await Promise.all(pointPromises);
       finalPoints[shape] = pointIDs;
@@ -76,7 +75,7 @@ class USHINBase {
       revisionOf,
       focus,
       main,
-      createdAt: createdAtTime,
+      createdAt: createdAt,
       author: authorURL,
       points: finalPoints,
     });
@@ -110,7 +109,7 @@ class USHINBase {
   async searchMessages(selector = {}, { limit = 32, skip, sort } = {}) {
     const finalSelector = { ...selector, type: "message" };
     const { docs } = await this.db.find({
-      selector,
+      finalSelector,
       limit,
       skip,
     });
@@ -124,7 +123,6 @@ class USHINBase {
     shape,
     pointDate,
     quotedAuthor,
-    createdAt,
   }) {
     const { id } = await this.db.post({
       type: "point",
