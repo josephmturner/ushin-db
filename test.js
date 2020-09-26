@@ -59,7 +59,10 @@ test("Able to add and get messages", async (t) => {
     t.equal(author, "test", "Author got set");
     t.equal(feelings.length, 1, "Feelings got set");
     t.equal(point.content, "Cats bring me joy", "Point content got set");
-    t.ok(createdAt, "Timestamp got auto-generated");
+    t.ok(
+      createdAt instanceof Date,
+      "Timestamp got auto-generated and is a Date"
+    );
   } catch (e) {
     t.error(e);
   } finally {
@@ -80,6 +83,17 @@ test("Able to search for messages in a time range", async (t) => {
     const results = await db.searchMessages({ createdAt: { $gt: 100 } });
 
     t.equal(results.length, 2, "Got expected results");
+    const [message] = results;
+    const { author, points, createdAt } = message;
+    const { feelings } = points;
+    const [point] = feelings;
+    t.equal(author, "test", "Author got set");
+    t.equal(feelings.length, 1, "Feelings got set");
+    t.equal(point.content, "Cats bring me joy", "Point content got set");
+    t.ok(
+      createdAt instanceof Date,
+      "Timestamp got auto-generated and is a Date"
+    );
   } catch (e) {
     t.error(e);
   } finally {

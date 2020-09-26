@@ -66,8 +66,9 @@ class USHINBase {
     for (const shape in points) {
       const originalPoints = points[shape];
       const pointPromises = originalPoints.map((point) => {
-        if (!point._id)
+        if (!point._id) {
           return this.addPoint({ createdAt: createdAtTime, ...point });
+        }
         return point._id;
       });
       const pointIDs = await Promise.all(pointPromises);
@@ -89,7 +90,12 @@ class USHINBase {
 
   async getMessage(id) {
     const rawMessage = await this.db.get(id);
-    const { points: rawPoints, createdAt } = rawMessage;
+
+    return this._populateMessage(rawMessage);
+  }
+
+  async _populateMessage(rawMessage) {
+    const { _id, points: rawPoints, createdAt } = rawMessage;
 
     const finalPoints = {};
 
@@ -105,7 +111,7 @@ class USHINBase {
     return {
       ...rawMessage,
       points: finalPoints,
-      messageId: id,
+      messageId: _id,
       createdAt: createdAtDate,
     };
   }
@@ -118,7 +124,7 @@ class USHINBase {
       skip,
     });
 
-    return docs;
+    return Promise.all(docs.map((message) => this._populateMessage(message)));
   }
 
   async addPoint({
