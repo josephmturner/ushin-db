@@ -14,10 +14,9 @@ class USHINBase {
       adapter: "leveldb",
       db: leveldown,
       // This is some weird legacy thing we're going to pretend doesn't exist.
-      migrate: false
+      migrate: false,
     });
     this.authorURL = authorURL;
-    this.loadDBForAuthor;
   }
 
   async init() {
@@ -66,9 +65,11 @@ class USHINBase {
 
     for (const shape in points) {
       const originalPoints = points[shape];
-      const pointPromises = originalPoints.map((point) =>
-        this.addPoint({ createdAt: createdAtTime, ...point })
-      );
+      const pointPromises = originalPoints.map((point) => {
+        if (!point._id)
+          return this.addPoint({ createdAt: createdAtTime, ...point });
+        return point._id;
+      });
       const pointIDs = await Promise.all(pointPromises);
       finalPoints[shape] = pointIDs;
     }
@@ -92,7 +93,7 @@ class USHINBase {
 
     const finalPoints = {};
 
-    for (let shape in rawPoints) {
+    for (const shape in rawPoints) {
       const pointIDs = rawPoints[shape];
       const pointPromises = pointIDs.map((id) => this.getPoint(id));
       const pointObjects = await Promise.all(pointPromises);
@@ -112,7 +113,7 @@ class USHINBase {
   async searchMessages(selector = {}, { limit = 32, skip, sort } = {}) {
     const finalSelector = { ...selector, type: "message" };
     const { docs } = await this.db.find({
-      selector,
+      selector: finalSelector,
       limit,
       skip,
     });

@@ -43,7 +43,7 @@ test("Able to initialize and set author metadata", async (t) => {
 });
 
 test("Able to add and get messages", async (t) => {
-  t.plan(4);
+  t.plan(5);
   try {
     var db = await getNew("test");
 
@@ -59,6 +59,7 @@ test("Able to add and get messages", async (t) => {
     t.equal(author, "test", "Author got set");
     t.equal(feelings.length, 1, "Feelings got set");
     t.equal(point.content, "Cats bring me joy", "Point content got set");
+    t.ok(createdAt, "Timestamp got auto-generated");
   } catch (e) {
     t.error(e);
   } finally {
