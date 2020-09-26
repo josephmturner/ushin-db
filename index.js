@@ -62,12 +62,12 @@ class USHINBase {
     const { authorURL } = this;
     const finalPoints = {};
     let createdAtTime;
-    if (typeof(createdAt) === "string") {
+    if (typeof createdAt === "string") {
       createdAtTime = new Date(createdAt).getTime();
-    } else if (typeof(createdAt) === "object") {
+    } else if (typeof createdAt === "object") {
       createdAtTime = createdAt.getTime();
     } else {
-      throw "message's createdAt attribute is neither of type string nor object"
+      throw "message's createdAt attribute is neither of type string nor object";
     }
 
     for (const shape in points) {

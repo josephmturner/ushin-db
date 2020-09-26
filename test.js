@@ -12,6 +12,7 @@ async function getNew(authorURL = "hyper://example") {
 }
 
 const EXAMPLE_MESSAGE = {
+  main: "Example",
   points: {
     feelings: [
       {
@@ -43,7 +44,7 @@ test("Able to initialize and set author metadata", async (t) => {
 });
 
 test("Able to add and get messages", async (t) => {
-  t.plan(5);
+  t.plan(6);
   try {
     var db = await getNew("test");
 
@@ -53,7 +54,7 @@ test("Able to add and get messages", async (t) => {
 
     const message = await db.getMessage(id);
 
-    const { author, points, createdAt } = message;
+    const { author, points, createdAt, main } = message;
     const { feelings } = points;
     const [point] = feelings;
     t.equal(author, "test", "Author got set");
@@ -63,6 +64,7 @@ test("Able to add and get messages", async (t) => {
       createdAt instanceof Date,
       "Timestamp got auto-generated and is a Date"
     );
+    t.equal(main, EXAMPLE_MESSAGE.main, "main id got set");
   } catch (e) {
     t.error(e);
   } finally {
@@ -70,7 +72,7 @@ test("Able to add and get messages", async (t) => {
   }
 });
 test("Able to search for messages in a time range", async (t) => {
-  t.plan(2);
+  t.plan(6);
   try {
     var db = await getNew("test");
 
