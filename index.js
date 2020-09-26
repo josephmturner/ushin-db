@@ -73,7 +73,7 @@ class USHINBase {
     for (const shape in points) {
       const originalPoints = points[shape];
       const pointPromises = originalPoints.map((point) => {
-        if (!point._id) {
+        if (!point._id || !point._rev) {
           return this.addPoint({ createdAt: createdAtTime, ...point });
         }
         return point._id;
@@ -118,7 +118,6 @@ class USHINBase {
     return {
       ...rawMessage,
       points: finalPoints,
-      messageId: _id,
       createdAt: createdAtDate,
     };
   }
@@ -149,6 +148,7 @@ class USHINBase {
       shape,
       pointDate,
       quotedAuthor,
+      createdAt
     });
     return id;
   }
