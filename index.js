@@ -13,6 +13,8 @@ class USHINBase {
     this.db = new PouchDB("ushin-db", {
       adapter: "leveldb",
       db: leveldown,
+      // This is some weird legacy thing we're going to pretend doesn't exist.
+      migrate: false
     });
     this.authorURL = authorURL;
     this.loadDBForAuthor;
