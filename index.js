@@ -61,20 +61,34 @@ class USHINBase {
   }) {
     const { authorURL } = this;
     const finalPoints = {};
+    let _main = main;
+    let _focus = focus;
     let createdAtTime;
     if (typeof createdAt === "string") {
       createdAtTime = new Date(createdAt).getTime();
     } else if (typeof createdAt === "object") {
       createdAtTime = createdAt.getTime();
     } else {
-      throw "message's createdAt attribute is neither of type string nor object";
+      throw new Error("message's createdAt attribute isn't a string or object");
     }
 
     for (const shape in points) {
       const originalPoints = points[shape];
       const pointPromises = originalPoints.map((point) => {
-        if (!point._id || !point._rev) {
-          return this.addPoint({ createdAt: createdAtTime, ...point });
+        //if point doesn't yet exist in the db, add it and reassign
+        //the value of main or focus._id if necessary
+        const exists = async (id) => {
+          return !!(await this.db.get(id));
+        };
+        if (point._id && !exists(point._id)) {
+          const pointId = this.addPoint({ createdAt: createdAtTime, ...point });
+          if (point._id === main) {
+            _main = pointId;
+          }
+          if (point._id === focus._id) {
+            _focus._id = pointId;
+          }
+          return pointId;
         }
         return point._id;
       });
@@ -85,8 +99,8 @@ class USHINBase {
     const { id } = await this.db.post({
       type: "message",
       revisionOf,
-      focus,
-      main,
+      focus: _focus,
+      main: _main,
       createdAt: createdAtTime,
       author: authorURL,
       points: finalPoints,
@@ -148,7 +162,7 @@ class USHINBase {
       shape,
       pointDate,
       quotedAuthor,
-      createdAt
+      createdAt,
     });
     return id;
   }
