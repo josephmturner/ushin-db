@@ -67,7 +67,9 @@ class USHINBase {
     } else if (typeof createdAt === "object") {
       createdAtTime = createdAt.getTime();
     } else {
-      throw "message's createdAt attribute is neither of type string nor object";
+      throw new Error(
+        "message's createdAt attribute is neither of type string nor object"
+      );
     }
 
     for (const shape in points) {
@@ -102,7 +104,7 @@ class USHINBase {
   }
 
   async _populateMessage(rawMessage) {
-    const { _id, points: rawPoints, createdAt } = rawMessage;
+    const { points: rawPoints, createdAt } = rawMessage;
 
     const finalPoints = {};
 
@@ -134,6 +136,7 @@ class USHINBase {
   }
 
   async addPoint({
+    _id,
     author,
     content,
     shape,
@@ -141,16 +144,23 @@ class USHINBase {
     quotedAuthor,
     createdAt,
   }) {
-    const { id } = await this.db.post({
+    const doc = {
+      _id,
       type: "point",
       author,
       content,
       shape,
       pointDate,
       quotedAuthor,
-      createdAt
-    });
-    return id;
+      createdAt,
+    };
+    if (!_id) {
+      const { id } = await this.db.post(doc);
+      return id;
+    } else {
+      await this.db.put(doc);
+      return _id;
+    }
   }
 
   async getPoint(id) {
