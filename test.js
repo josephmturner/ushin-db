@@ -102,3 +102,27 @@ test("Able to search for messages in a time range", async (t) => {
     if (db) db.close();
   }
 });
+test("Able to search for documents by their text contents", async (t) => {
+  try {
+    var db = await getNew();
+
+    await db.addPoint({ content: "Hello world", _id: "one" });
+    await db.addPoint({ content: "Goodbye world", _id: "two" });
+
+    const results1 = await db.searchPointsByContent("world");
+    const results1Ids = results1.map(({ _id }) => _id);
+
+    // Note that the sort order has newer points first
+    t.deepEqual(results1Ids, ["two", "one"], "Got expected point IDs");
+
+    const results2 = await db.searchPointsByContent("hello");
+    const results2Ids = results2.map(({ _id }) => _id);
+
+    t.deepEqual(results2Ids, ["one"], "Got just the matching document");
+  } catch (e) {
+    t.error(e);
+  } finally {
+    if (db) db.close();
+    t.end();
+  }
+});

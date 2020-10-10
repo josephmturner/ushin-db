@@ -3,6 +3,8 @@ PouchDB.plugin(orDefault(require("pouchdb-adapter-leveldb-browser")));
 PouchDB.plugin(orDefault(require("pouchdb-find")));
 
 const AUTHOR_KEY = "author";
+const REGEX_NON_WORDS = /\W+/;
+const DEFAULT_SORT = [{ type: "desc" }, { createdAt: "desc" }];
 
 // Based on USHIN data model
 // https://github.com/USHIN-Inc/ushin-app/blob/master/src/dataModels.ts
@@ -29,6 +31,12 @@ class USHINBase {
     await this.db.createIndex({
       index: {
         fields: ["type", "createdAt"],
+      },
+    });
+
+    await this.db.createIndex({
+      index: {
+        fields: ["type", "createdAt", "textSearch"],
       },
     });
   }
@@ -124,15 +132,43 @@ class USHINBase {
     };
   }
 
-  async searchMessages(selector = {}, { limit = 32, skip, sort } = {}) {
-    const finalSelector = { ...selector, type: "message" };
+  async searchMessages(
+    selector = {},
+    { limit = 32, skip, sort = DEFAULT_SORT } = {}
+  ) {
+    const finalSelector = {
+      createdAt: { $exists: true },
+      ...selector,
+      type: "message",
+    };
+
     const { docs } = await this.db.find({
       selector: finalSelector,
+      sort,
       limit,
       skip,
     });
 
     return Promise.all(docs.map((message) => this._populateMessage(message)));
+  }
+
+  async searchPointsByContent(
+    query,
+    { limit = 32, skip, sort = DEFAULT_SORT } = {}
+  ) {
+    const tokens = stringToTokens(query);
+    const { docs } = await this.db.find({
+      selector: {
+        type: "point",
+        textSearch: { $all: tokens },
+        createdAt: { $exists: true },
+      },
+      sort,
+      limit,
+      skip,
+    });
+
+    return docs;
   }
 
   async addPoint({
@@ -144,6 +180,12 @@ class USHINBase {
     quotedAuthor,
     createdAt,
   }) {
+    let textSearch;
+    // Only set the textSearch property if there's content for this point
+    if (content) {
+      const tokens = stringToTokens(content);
+      if (tokens.length) textSearch = tokens;
+    }
     const doc = {
       _id,
       type: "point",
@@ -152,7 +194,8 @@ class USHINBase {
       shape,
       pointDate,
       quotedAuthor,
-      createdAt,
+      createdAt: createdAt || Date.now(),
+      textSearch,
     };
     if (!_id) {
       const { id } = await this.db.post(doc);
@@ -163,6 +206,7 @@ class USHINBase {
     }
   }
 
+  // TODO: Throw error if document isn't a point?
   async getPoint(id) {
     return this.db.get(id);
   }
@@ -181,4 +225,13 @@ module.exports = {
 function orDefault(module) {
   if (module.default) return module.default;
   return module;
+}
+
+// Convert some text to tokens which can be used for searching
+function stringToTokens(content) {
+  const lowered = content.toLowerCase();
+  const rawTokens = lowered.split(REGEX_NON_WORDS);
+  const nonEmpty = rawTokens.filter((item) => !!item);
+  const deduped = new Set(nonEmpty);
+  return [...deduped];
 }
