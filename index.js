@@ -23,21 +23,18 @@ class USHINBase {
 
   async init() {
     // TODO create indexes here based on the sorts of queries we want
-    await this.db.createIndex({
-      index: {
-        fields: ["type"],
-      },
-    });
-    await this.db.createIndex({
-      index: {
-        fields: ["type", "createdAt"],
-      },
-    });
+    await this.createIndex("type");
 
-    await this.db.createIndex({
-      index: {
-        fields: ["type", "createdAt", "textSearch"],
-      },
+    await this.createIndex("type", "createdAt");
+
+    //await this.createIndex("type", "createdAt", "textSearch");
+
+    //await this.createIndex("type", "createdAt", "allPoints");
+  }
+
+  async createIndex(...fields) {
+    return this.db.createIndex({
+      index: { fields },
     });
   }
 
@@ -60,15 +57,11 @@ class USHINBase {
     }
   }
 
-  async addMessage({
-    revisionOf,
-    focus,
-    main,
-    createdAt = new Date(),
-    points = {},
-  }) {
+  async addMessage(
+    { _id, _rev, revisionOf, focus, main, createdAt = new Date(), points = {} },
+    pointStore = {}
+  ) {
     const { authorURL } = this;
-    const finalPoints = {};
     let createdAtTime;
     if (typeof createdAt === "string") {
       createdAtTime = new Date(createdAt).getTime();
@@ -80,56 +73,60 @@ class USHINBase {
       );
     }
 
+    const allPoints = new Set();
+
+    if (focus) allPoints.add(focus);
+
     for (const shape in points) {
-      const originalPoints = points[shape];
-      const pointPromises = originalPoints.map((point) => {
-        if (!point._id || !point._rev) {
-          return this.addPoint({ createdAt: createdAtTime, ...point });
+      const pointIds = points[shape];
+      for (const pointId of pointIds) {
+        const point = pointStore[pointId];
+        if (!point) {
+          const error = new Error("Point ID not found in store");
+          error.pointId = pointId;
+          throw error;
         }
-        return point._id;
-      });
-      const pointIDs = await Promise.all(pointPromises);
-      finalPoints[shape] = pointIDs;
+        if (!point._id) throw new Error("Must specify point ID");
+        if (!point._rev) {
+          console.log(point);
+          await this.addPoint({ createdAt: createdAtTime, ...point });
+        }
+        allPoints.add(pointId);
+        if (point.referenceHistory) {
+          for (const { pointId: referencePoint } of point) {
+            allPoints.add(referencePoint);
+          }
+        }
+      }
     }
 
-    const { id } = await this.db.post({
+    const toSave = {
       type: "message",
       revisionOf,
       focus,
       main,
       createdAt: createdAtTime,
       author: authorURL,
-      points: finalPoints,
-    });
+      points,
+      allPoints: [...allPoints],
+    };
 
-    return id;
+    if (_id && _rev) {
+      await this.db.put({ ...toSave, _id, _rev });
+      return _id;
+    } else {
+      const { id } = await this.db.post(toSave);
+
+      return id;
+    }
   }
 
   async getMessage(id) {
     const rawMessage = await this.db.get(id);
-
-    return this._populateMessage(rawMessage);
-  }
-
-  async _populateMessage(rawMessage) {
-    const { points: rawPoints, createdAt } = rawMessage;
-
-    const finalPoints = {};
-
-    for (const shape in rawPoints) {
-      const pointIDs = rawPoints[shape];
-      const pointPromises = pointIDs.map((id) => this.getPoint(id));
-      const pointObjects = await Promise.all(pointPromises);
-      finalPoints[shape] = pointObjects;
-    }
-
+    const { createdAt } = rawMessage;
     const createdAtDate = new Date(createdAt);
 
-    return {
-      ...rawMessage,
-      points: finalPoints,
-      createdAt: createdAtDate,
-    };
+    return { ...rawMessage, createdAt: createdAtDate };
   }
 
   async searchMessages(
@@ -142,14 +139,47 @@ class USHINBase {
       type: "message",
     };
 
-    const { docs } = await this.db.find({
+    console.log(finalSelector);
+
+    const result = await this.db.find({
       selector: finalSelector,
       sort,
       limit,
       skip,
     });
 
-    return Promise.all(docs.map((message) => this._populateMessage(message)));
+    console.log(result);
+
+    const { docs } = result;
+
+    return docs.map((rawMessage) => {
+      const createdAtDate = new Date(rawMessage.createdAt);
+      return { ...rawMessage, createdAt: createdAtDate };
+    });
+  }
+
+  async getPointsForMessage({ focus, points }) {
+    const allPoints = new Set();
+
+    if (focus) allPoints.add(focus);
+
+    for (const shape in points) {
+      const pointIds = points[shape];
+      for (const pointId of pointIds) {
+        allPoints.add(pointId);
+      }
+    }
+
+    const pointIds = [...allPoints];
+
+    const pointData = await Promise.all(
+      pointIds.map((id) => this.getPoint(id))
+    );
+
+    return pointData.reduce((result, point) => {
+      result[point._id] = point;
+      return result;
+    }, {});
   }
 
   async searchPointsByContent(
@@ -171,29 +201,21 @@ class USHINBase {
     return docs;
   }
 
-  async addPoint({
-    _id,
-    author,
-    content,
-    shape,
-    pointDate,
-    quotedAuthor,
-    createdAt,
-  }) {
+  async addPoint(point) {
     let textSearch;
+    const { _id, content, createdAt } = point;
+
     // Only set the textSearch property if there's content for this point
     if (content) {
       const tokens = stringToTokens(content);
       if (tokens.length) textSearch = tokens;
     }
+
     const doc = {
+      ...point,
       _id,
       type: "point",
-      author,
       content,
-      shape,
-      pointDate,
-      quotedAuthor,
       createdAt: createdAt || Date.now(),
       textSearch,
     };
