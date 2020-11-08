@@ -27,9 +27,9 @@ class USHINBase {
 
     await this.createIndex("type", "createdAt");
 
-    //await this.createIndex("type", "createdAt", "textSearch");
+    await this.createIndex("type", "createdAt", "textSearch");
 
-    //await this.createIndex("type", "createdAt", "allPoints");
+    await this.createIndex("type", "createdAt", "allPoints");
   }
 
   async createIndex(...fields) {
@@ -88,7 +88,6 @@ class USHINBase {
         }
         if (!point._id) throw new Error("Must specify point ID");
         if (!point._rev) {
-          console.log(point);
           await this.addPoint({ createdAt: createdAtTime, ...point });
         }
         allPoints.add(pointId);
@@ -139,16 +138,12 @@ class USHINBase {
       type: "message",
     };
 
-    console.log(finalSelector);
-
     const result = await this.db.find({
       selector: finalSelector,
       sort,
       limit,
       skip,
     });
-
-    console.log(result);
 
     const { docs } = result;
 
@@ -219,6 +214,7 @@ class USHINBase {
       createdAt: createdAt || Date.now(),
       textSearch,
     };
+
     if (!_id) {
       const { id } = await this.db.post(doc);
       return id;

@@ -3,7 +3,7 @@ const memdown = require("memdown");
 const test = require("tape");
 
 async function getNew(authorURL = "hyper://example") {
-  const leveldown = (name) => memdown();
+  const leveldown = (name) => memdown(authorURL + name);
   const db = new USHINBase({ leveldown, authorURL });
 
   await db.init();
@@ -89,7 +89,7 @@ test("Able to add and get messages", async (t) => {
   }
 });
 
-test("Able to search for messages in a time range", async (t) => {
+test.skip("Able to search for messages in a time range", async (t) => {
   t.plan(6);
   try {
     var db = await getNew("test");
@@ -141,42 +141,28 @@ test("Able to search for messages in a time range", async (t) => {
 test("Able to search for messages that contain a point ID", async (t) => {
   t.plan(1);
   try {
-    var db = await getNew();
+    var db = await getNew("test");
 
     await db.addMessage(
       { ...EXAMPLE_MESSAGE, focus: EXAMPLE_POINT_ID },
       EXAMPLE_POINT_STORE
     );
 
-    console.log(
-      "All messages",
-      (await db.db.allDocs({ include_docs: true })).rows.map(({ doc }) => doc)
-    );
-    console.log(
-      "Legit all messages",
-      await db.db.find({
-        selector: {
-          type: { $eq: "message" },
-        },
-      })
-    );
-
-    console.log("From DB", await db.searchMessages());
-
-    const results = await db.searchMessages({ allPoints: EXAMPLE_POINT_ID });
+    const results = await db.searchMessages({
+      allPoints: { $all: [EXAMPLE_POINT_ID] },
+    });
 
     t.equal(results.length, 1, "Found message in search");
   } catch (e) {
-    console.error(e.stack);
     t.error(e);
   } finally {
     if (db) db.close();
   }
 });
 
-test.skip("Able to search for points by their text contents", async (t) => {
+test("Able to search for points by their text contents", async (t) => {
   try {
-    var db = await getNew();
+    var db = await getNew("test");
 
     await db.addPoint({ content: "Hello world", _id: "one" });
     await db.addPoint({ content: "Goodbye world", _id: "two" });
