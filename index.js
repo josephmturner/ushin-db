@@ -92,7 +92,7 @@ class USHINBase {
         }
         allPoints.add(pointId);
         if (point.referenceHistory) {
-          for (const { pointId: referencePoint } of point) {
+          for (const { pointId: referencePoint } of point.referenceHistory) {
             allPoints.add(referencePoint);
           }
         }
