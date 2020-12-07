@@ -77,7 +77,7 @@ class USHINBase {
 
     if (focus) allPoints.add(focus);
 
-    for (const shape in points) {
+    for (const shape in Object.keys(points)) {
       const pointIds = points[shape];
       for (const pointId of pointIds) {
         const point = pointStore[pointId];
@@ -158,7 +158,7 @@ class USHINBase {
 
     if (focus) allPoints.add(focus);
 
-    for (const shape in points) {
+    for (const shape in Object.keys(points)) {
       const pointIds = points[shape];
       for (const pointId of pointIds) {
         allPoints.add(pointId);
