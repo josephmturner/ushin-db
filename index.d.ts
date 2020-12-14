@@ -34,6 +34,7 @@ declare module 'ushin-db' {
     searchMessages(selector: any, searchLimits: SearchLimits) : Promise<Message[]>
     getPointsForMessage(message: Message) : Promise<PointStore>
     searchPointsByContent(query: string, searchLimits: SearchLimits) : Promise<Point[]>
+    searchMessagesForPoints(points: Point[]) : Promise<Message[]>
     addPoint(point: Point) : Promise<ID>
     getPoint(id: ID) : Promise<Point>
     close() : Promise<undefined>
