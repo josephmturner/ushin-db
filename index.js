@@ -153,6 +153,21 @@ class USHINBase {
     });
   }
 
+  async searchMessagesForPoints(points, ...args) {
+    const allPoints = points.map(({ _id }) => _id);
+
+    return this.searchMessages(
+      {
+        allPoints: {
+          $elemMatch: {
+            $in: allPoints,
+          },
+        },
+      },
+      ...args
+    );
+  }
+
   async getPointsForMessage({ focus, points }) {
     const allPoints = new Set();
 

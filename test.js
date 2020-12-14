@@ -148,9 +148,7 @@ test("Able to search for messages that contain a point ID", async (t) => {
       EXAMPLE_POINT_STORE
     );
 
-    const results = await db.searchMessages({
-      allPoints: { $all: [EXAMPLE_POINT_ID] },
-    });
+    const results = await db.searchMessagesForPoints([EXAMPLE_POINT]);
 
     t.equal(results.length, 1, "Found message in search");
   } catch (e) {
@@ -176,7 +174,7 @@ test("Able to search for points by their text contents", async (t) => {
     const results2 = await db.searchPointsByContent("hello");
     const results2Ids = results2.map(({ _id }) => _id);
 
-    t.deepEqual(results2Ids, ["one"], "Got just the matching document");
+    t.deepEqual(results2Ids, ["one"], "Got just the matching points");
   } catch (e) {
     t.error(e);
   } finally {
