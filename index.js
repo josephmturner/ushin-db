@@ -7,7 +7,7 @@ const REGEX_NON_WORDS = /\W+/;
 const DEFAULT_SORT = [{ type: "desc" }, { createdAt: "desc" }];
 
 // Based on USHIN data model
-// https://github.com/USHIN-Inc/ushin-app/blob/master/src/dataModels.ts
+// https://github.com/USHIN-Inc/ushin-ui-components/blob/master/src/dataModels/dataModels.ts
 
 class USHINBase {
   constructor({ leveldown, authorURL }) {
@@ -58,7 +58,7 @@ class USHINBase {
   }
 
   async addMessage(
-    { _id, _rev, revisionOf, focus, main, createdAt = new Date(), points = {} },
+    { _id, _rev, revisionOf, main, createdAt = new Date(), points = {} },
     pointStore = {}
   ) {
     const { authorURL } = this;
@@ -75,7 +75,7 @@ class USHINBase {
 
     const allPoints = new Set();
 
-    if (focus) allPoints.add(focus);
+    if (main) allPoints.add(main);
 
     for (const shape of Object.keys(points)) {
       const pointIds = points[shape];
@@ -102,7 +102,6 @@ class USHINBase {
     const toSave = {
       type: "message",
       revisionOf,
-      focus,
       main,
       createdAt: createdAtTime,
       author: authorURL,
@@ -168,10 +167,10 @@ class USHINBase {
     );
   }
 
-  async getPointsForMessage({ focus, points }) {
+  async getPointsForMessage({ main, points }) {
     const allPoints = new Set();
 
-    if (focus) allPoints.add(focus);
+    if (main) allPoints.add(main);
 
     for (const shape of Object.keys(points)) {
       const pointIds = points[shape];
