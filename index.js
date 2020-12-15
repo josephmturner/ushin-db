@@ -100,6 +100,7 @@ class USHINBase {
     }
 
     const toSave = {
+      _id,
       type: "message",
       revisionOf,
       main,
