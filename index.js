@@ -58,7 +58,7 @@ class USHINBase {
   }
 
   async addMessage(
-    { _id, _rev, revisionOf, main, createdAt = new Date(), points = {} },
+    { _id, _rev, revisionOf, main, createdAt = new Date(), shapes = {} },
     pointStore = {}
   ) {
     const { authorURL } = this;
@@ -77,8 +77,8 @@ class USHINBase {
 
     if (main) allPoints.add(main);
 
-    for (const shape of Object.keys(points)) {
-      const pointIds = points[shape];
+    for (const shape of Object.keys(shapes)) {
+      const pointIds = shapes[shape];
       for (const pointId of pointIds) {
         const point = pointStore[pointId];
         if (!point) {
@@ -105,7 +105,7 @@ class USHINBase {
       main,
       createdAt: createdAtTime,
       author: authorURL,
-      points,
+      shapes,
       allPoints: [...allPoints],
     };
 
@@ -167,13 +167,13 @@ class USHINBase {
     );
   }
 
-  async getPointsForMessage({ main, points }) {
+  async getPointsForMessage({ main, shapes }) {
     const allPoints = new Set();
 
     if (main) allPoints.add(main);
 
-    for (const shape of Object.keys(points)) {
-      const pointIds = points[shape];
+    for (const shape of Object.keys(shapes)) {
+      const pointIds = shapes[shape];
       for (const pointId of pointIds) {
         allPoints.add(pointId);
       }

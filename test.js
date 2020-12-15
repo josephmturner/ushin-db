@@ -20,7 +20,7 @@ const EXAMPLE_POINT = {
 
 const EXAMPLE_MESSAGE = {
   main: EXAMPLE_POINT_ID,
-  points: {
+  shapes: {
     feelings: [EXAMPLE_POINT_ID],
   },
 };
@@ -61,8 +61,8 @@ test("Able to add and get messages", async (t) => {
 
     const message = await db.getMessage(id);
 
-    const { author, points, createdAt, main } = message;
-    const { feelings } = points;
+    const { author, shapes, createdAt, main } = message;
+    const { feelings } = shapes;
     const [pointId] = feelings;
 
     t.equal(pointId, EXAMPLE_POINT_ID, "Got saved point");
@@ -120,8 +120,8 @@ test.skip("Able to search for messages in a time range", async (t) => {
     t.equal(results.length, 2, "Got expected number of results");
 
     const [message] = results;
-    const { author, points, createdAt } = message;
-    const { feelings } = points;
+    const { author, shapes, createdAt } = message;
+    const { feelings } = shapes;
     const [pointId] = feelings;
 
     t.equal(pointId, EXAMPLE_POINT_ID, "Got point ID");
