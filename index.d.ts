@@ -33,12 +33,12 @@ declare module "ushin-db" {
     getMessage(id: ID): Promise<Message>;
     searchMessages(
       selector: any,
-      searchLimits: SearchLimits
+      searchLimits?: SearchLimits
     ): Promise<Message[]>;
     getPointsForMessage(message: Message): Promise<PointStore>;
     searchPointsByContent(
       query: string,
-      searchLimits: SearchLimits
+      searchLimits?: SearchLimits
     ): Promise<Point[]>;
     searchMessagesForPoints(points: Point[]): Promise<Message[]>;
     addPoint(point: Point): Promise<ID>;
