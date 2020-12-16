@@ -58,7 +58,7 @@ class USHINBase {
   }
 
   async addMessage(
-    { _id, _rev, revisionOf, main, createdAt = new Date(), points = {} },
+    { _id, _rev, revisionOf, main, createdAt = new Date(), shapes = {} },
     pointStore = {}
   ) {
     const { authorURL } = this;
@@ -77,8 +77,8 @@ class USHINBase {
 
     if (main) allPoints.add(main);
 
-    for (const shape of Object.keys(points)) {
-      const pointIds = points[shape];
+    for (const shape of Object.keys(shapes)) {
+      const pointIds = shapes[shape];
       for (const pointId of pointIds) {
         const point = pointStore[pointId];
         if (!point) {
@@ -100,12 +100,13 @@ class USHINBase {
     }
 
     const toSave = {
+      _id,
       type: "message",
       revisionOf,
       main,
       createdAt: createdAtTime,
       author: authorURL,
-      points,
+      shapes,
       allPoints: [...allPoints],
     };
 
@@ -152,13 +153,28 @@ class USHINBase {
     });
   }
 
-  async getPointsForMessage({ main, points }) {
+  async searchMessagesForPoints(points, ...args) {
+    const allPoints = points.map(({ _id }) => _id);
+
+    return this.searchMessages(
+      {
+        allPoints: {
+          $elemMatch: {
+            $in: allPoints,
+          },
+        },
+      },
+      ...args
+    );
+  }
+
+  async getPointsForMessage({ main, shapes }) {
     const allPoints = new Set();
 
     if (main) allPoints.add(main);
 
-    for (const shape of Object.keys(points)) {
-      const pointIds = points[shape];
+    for (const shape of Object.keys(shapes)) {
+      const pointIds = shapes[shape];
       for (const pointId of pointIds) {
         allPoints.add(pointId);
       }

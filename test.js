@@ -20,7 +20,7 @@ const EXAMPLE_POINT = {
 
 const EXAMPLE_MESSAGE = {
   main: EXAMPLE_POINT_ID,
-  points: {
+  shapes: {
     feelings: [EXAMPLE_POINT_ID],
   },
 };
@@ -61,8 +61,8 @@ test("Able to add and get messages", async (t) => {
 
     const message = await db.getMessage(id);
 
-    const { author, points, createdAt, main } = message;
-    const { feelings } = points;
+    const { author, shapes, createdAt, main } = message;
+    const { feelings } = shapes;
     const [pointId] = feelings;
 
     t.equal(pointId, EXAMPLE_POINT_ID, "Got saved point");
@@ -120,8 +120,8 @@ test.skip("Able to search for messages in a time range", async (t) => {
     t.equal(results.length, 2, "Got expected number of results");
 
     const [message] = results;
-    const { author, points, createdAt } = message;
-    const { feelings } = points;
+    const { author, shapes, createdAt } = message;
+    const { feelings } = shapes;
     const [pointId] = feelings;
 
     t.equal(pointId, EXAMPLE_POINT_ID, "Got point ID");
@@ -148,9 +148,7 @@ test("Able to search for messages that contain a point ID", async (t) => {
       EXAMPLE_POINT_STORE
     );
 
-    const results = await db.searchMessages({
-      allPoints: { $all: [EXAMPLE_POINT_ID] },
-    });
+    const results = await db.searchMessagesForPoints([EXAMPLE_POINT]);
 
     t.equal(results.length, 1, "Found message in search");
   } catch (e) {
@@ -176,7 +174,7 @@ test("Able to search for points by their text contents", async (t) => {
     const results2 = await db.searchPointsByContent("hello");
     const results2Ids = results2.map(({ _id }) => _id);
 
-    t.deepEqual(results2Ids, ["one"], "Got just the matching document");
+    t.deepEqual(results2Ids, ["one"], "Got just the matching points");
   } catch (e) {
     t.error(e);
   } finally {
