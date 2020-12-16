@@ -73,31 +73,29 @@ class USHINBase {
       );
     }
 
-    const allPoints = new Set();
+    const allPoints = new Set([main, ...Object.values(shapes).flat()]);
 
-    if (main) allPoints.add(main);
-
-    for (const shape of Object.keys(shapes)) {
-      const pointIds = shapes[shape];
-      for (const pointId of pointIds) {
-        const point = pointStore[pointId];
-        if (!point) {
-          const error = new Error("Point ID not found in store");
-          error.pointId = pointId;
-          throw error;
-        }
-        if (!point._id) throw new Error("Must specify point ID");
-        if (!point._rev) {
-          await this.addPoint({ createdAt: createdAtTime, ...point });
-        }
-        allPoints.add(pointId);
-        if (point.referenceHistory) {
-          for (const { pointId: referencePoint } of point.referenceHistory) {
-            allPoints.add(referencePoint);
-          }
-        }
+    for (const pointId of allPoints) {
+      const point = pointStore[pointId];
+      if (!point) {
+        const error = new Error("Point ID not found in store");
+        error.pointId = pointId;
+        throw error;
+      }
+      if (!point._id) throw new Error("Must specify point ID");
+      if (!point._rev) {
+        await this.addPoint({ createdAt: createdAtTime, ...point });
       }
     }
+
+    // Convert set to array to avoid iterating over pointIds which are
+    // added inside the conditional block below
+    [...allPoints].forEach((pointId) => {
+      const point = pointStore[pointId];
+      if (point.referenceHistory) {
+        point.referenceHistory.forEach((log) => allPoints.add(log.pointId));
+      }
+    });
 
     const toSave = {
       _id,
@@ -111,7 +109,7 @@ class USHINBase {
     };
 
     if (_id && _rev) {
-      await this.db.put({ ...toSave, _id, _rev });
+      await this.db.put({ ...toSave, _rev });
       return _id;
     } else {
       const { id } = await this.db.post(toSave);
