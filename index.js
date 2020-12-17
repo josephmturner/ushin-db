@@ -61,7 +61,10 @@ class USHINBase {
     { _id, _rev, revisionOf, main, createdAt = new Date(), shapes = {} },
     pointStore = {}
   ) {
+    if (!main) throw new Error("Message lacks main point");
+
     const { authorURL } = this;
+
     let createdAtTime;
     if (typeof createdAt === "string") {
       createdAtTime = new Date(createdAt).getTime();
@@ -75,7 +78,9 @@ class USHINBase {
 
     const allPoints = new Set([main, ...Object.values(shapes).flat()]);
 
-    for (const pointId of allPoints) {
+    // Convert allPoints set to array to avoid iterating over pointIds which are
+    // added from referenceHistory
+    for (const pointId of [...allPoints]) {
       const point = pointStore[pointId];
       if (!point) {
         const error = new Error("Point ID not found in store");
@@ -86,16 +91,10 @@ class USHINBase {
       if (!point._rev) {
         await this.addPoint({ createdAt: createdAtTime, ...point });
       }
-    }
-
-    // Convert set to array to avoid iterating over pointIds which are
-    // added inside the conditional block below
-    [...allPoints].forEach((pointId) => {
-      const point = pointStore[pointId];
       if (point.referenceHistory) {
-        point.referenceHistory.forEach((log) => allPoints.add(log.pointId));
+        for (const log of point.referenceHistory) allPoints.add(log.pointId);
       }
-    });
+    }
 
     const toSave = {
       _id,
