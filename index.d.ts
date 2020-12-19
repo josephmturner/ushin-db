@@ -4,9 +4,20 @@ declare module "ushin-db" {
     authorURL: string;
   }
 
-  export interface AuthorInfo {
+  export type AuthorInfo = {
+    _id: string;
+    _rev: string;
     name: string;
-  }
+    color: string;
+  };
+
+  type PickPartial<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> &
+    Partial<Pick<T, K>>;
+
+  export type AuthorInfoOnlyIdAndRevRequired = PickPartial<
+    AuthorInfo,
+    "name" | "color"
+  >;
 
   // TODO import interface from USHIN here
   export type Message = any;
@@ -28,7 +39,7 @@ declare module "ushin-db" {
     init(): Promise<undefined>;
     createIndex(...fields: string[]): Promise<undefined>;
     setAuthorInfo(info: AuthorInfo): Promise<undefined>;
-    getAuthorInfo(): Promise<AuthorInfo>;
+    getAuthorInfo(): Promise<AuthorInfoOnlyIdAndRevRequired>;
     addMessage(message: Message, points: PointStore): Promise<ID>;
     getMessage(id: ID): Promise<Message>;
     searchMessages(

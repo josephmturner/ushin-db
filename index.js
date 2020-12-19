@@ -39,7 +39,7 @@ class USHINBase {
   }
 
   async setAuthorInfo(info = {}) {
-    const { _rev, _id, ...data } = this.getAuthorInfo();
+    const { _rev, _id, ...data } = await this.getAuthorInfo();
     await this.db.put({
       ...data,
       ...info,
@@ -53,7 +53,12 @@ class USHINBase {
       const info = await this.db.get(AUTHOR_KEY);
       return info;
     } catch (e) {
-      return { _id: AUTHOR_KEY };
+      if (e.name === "not_found") {
+        await this.db.put({ _id: AUTHOR_KEY });
+        return await this.db.get(AUTHOR_KEY);
+      } else {
+        throw e;
+      }
     }
   }
 
