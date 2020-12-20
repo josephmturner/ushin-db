@@ -39,7 +39,7 @@ class USHINBase {
   }
 
   async setAuthorInfo(info = {}) {
-    const { _rev, _id, ...data } = this.getAuthorInfo();
+    const { _rev, _id, ...data } = await this.getAuthorInfo();
     await this.db.put({
       ...data,
       ...info,
@@ -53,7 +53,12 @@ class USHINBase {
       const info = await this.db.get(AUTHOR_KEY);
       return info;
     } catch (e) {
-      return { _id: AUTHOR_KEY };
+      if (e.name === "not_found") {
+        await this.db.put({ _id: AUTHOR_KEY });
+        return await this.db.get(AUTHOR_KEY);
+      } else {
+        throw e;
+      }
     }
   }
 
@@ -61,7 +66,10 @@ class USHINBase {
     { _id, _rev, revisionOf, main, createdAt = new Date(), shapes = {} },
     pointStore = {}
   ) {
+    if (!main) throw new Error("Message lacks main point");
+
     const { authorURL } = this;
+
     let createdAtTime;
     if (typeof createdAt === "string") {
       createdAtTime = new Date(createdAt).getTime();
@@ -73,29 +81,23 @@ class USHINBase {
       );
     }
 
-    const allPoints = new Set();
+    const allPoints = new Set([main, ...Object.values(shapes).flat()]);
 
-    if (main) allPoints.add(main);
-
-    for (const shape of Object.keys(shapes)) {
-      const pointIds = shapes[shape];
-      for (const pointId of pointIds) {
-        const point = pointStore[pointId];
-        if (!point) {
-          const error = new Error("Point ID not found in store");
-          error.pointId = pointId;
-          throw error;
-        }
-        if (!point._id) throw new Error("Must specify point ID");
-        if (!point._rev) {
-          await this.addPoint({ createdAt: createdAtTime, ...point });
-        }
-        allPoints.add(pointId);
-        if (point.referenceHistory) {
-          for (const { pointId: referencePoint } of point.referenceHistory) {
-            allPoints.add(referencePoint);
-          }
-        }
+    // Convert allPoints set to array to avoid iterating over pointIds which are
+    // added from referenceHistory
+    for (const pointId of [...allPoints]) {
+      const point = pointStore[pointId];
+      if (!point) {
+        const error = new Error("Point ID not found in store");
+        error.pointId = pointId;
+        throw error;
+      }
+      if (!point._id) throw new Error("Must specify point ID");
+      if (!point._rev) {
+        await this.addPoint({ createdAt: createdAtTime, ...point });
+      }
+      if (point.referenceHistory) {
+        for (const log of point.referenceHistory) allPoints.add(log.pointId);
       }
     }
 
@@ -111,7 +113,7 @@ class USHINBase {
     };
 
     if (_id && _rev) {
-      await this.db.put({ ...toSave, _id, _rev });
+      await this.db.put({ ...toSave, _rev });
       return _id;
     } else {
       const { id } = await this.db.post(toSave);
