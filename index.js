@@ -171,24 +171,22 @@ class USHINBase {
   }
 
   async getPointsForMessage({ main, shapes }) {
-    const allPoints = new Set();
+    const pointIds = [main, ...Object.values(shapes).flat()];
+    let points = await Promise.all(pointIds.map((id) => this.getPoint(id)));
 
-    if (main) allPoints.add(main);
-
-    for (const shape of Object.keys(shapes)) {
-      const pointIds = shapes[shape];
-      for (const pointId of pointIds) {
-        allPoints.add(pointId);
+    const referencePointIds = new Set();
+    for (const point of points) {
+      if (point.referenceHistory) {
+        for (const log of point.referenceHistory)
+          referencePointIds.add(log.pointId);
       }
     }
-
-    const pointIds = [...allPoints];
-
-    const pointData = await Promise.all(
-      pointIds.map((id) => this.getPoint(id))
+    const referencePoints = await Promise.all(
+      [...referencePointIds].map((id) => this.getPoint(id))
     );
+    points = points.concat(referencePoints);
 
-    return pointData.reduce((result, point) => {
+    return points.reduce((result, point) => {
       result[point._id] = point;
       return result;
     }, {});
