@@ -55,7 +55,8 @@ class USHINBase {
     } catch (e) {
       if (e.name === "not_found") {
         await this.db.put({ _id: AUTHOR_KEY });
-        return await this.db.get(AUTHOR_KEY);
+        // No need to await when returning from async fn
+        return this.db.get(AUTHOR_KEY);
       } else {
         throw e;
       }
@@ -170,25 +171,35 @@ class USHINBase {
     );
   }
 
-  async getPointsForMessage({ main, shapes }) {
-    const allPoints = new Set();
+  async getPointsForMessage({ main, shapes }, existingPoints = {}) {
+    const pointIds = [main, ...Object.values(shapes).flat()];
 
-    if (main) allPoints.add(main);
+    const dedupedPointIds = pointIds.filter((id) => !existingPoints[id]);
 
-    for (const shape of Object.keys(shapes)) {
-      const pointIds = shapes[shape];
-      for (const pointId of pointIds) {
-        allPoints.add(pointId);
+    const points = await Promise.all(
+      dedupedPointIds.map((id) => this.getPoint(id))
+    );
+
+    const referencePointIds = new Set();
+    for (const point of points) {
+      if (point.referenceHistory) {
+        for (const log of point.referenceHistory) {
+          referencePointIds.add(log.pointId);
+        }
       }
     }
 
-    const pointIds = [...allPoints];
-
-    const pointData = await Promise.all(
-      pointIds.map((id) => this.getPoint(id))
+    const dedupedReferencePointIds = [...referencePointIds].filter(
+      (id) => !existingPoints[id]
     );
 
-    return pointData.reduce((result, point) => {
+    const referencePoints = await Promise.all(
+      dedupedReferencePointIds.map((id) => this.getPoint(id))
+    );
+
+    points.push(...referencePoints);
+
+    return points.reduce((result, point) => {
       result[point._id] = point;
       return result;
     }, {});
